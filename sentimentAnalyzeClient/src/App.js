@@ -27,7 +27,7 @@ class App extends React.Component {
     if(this.state.mode === "text") {
       this.setState({innercomp:<textarea rows="1" cols="50" id="textinput"/>,
       mode: "url",
-      sentimentOutput:[],
+      sentimentOutput: [],
       sentiment:true
     })
     }
@@ -36,35 +36,46 @@ class App extends React.Component {
   sendForSentimentAnalysis = () => {
     this.setState({sentiment:true});
     let ret = "";
-    let url = ".";
-
+    let url = "https://eakalagova-8081.theiadocker-24.proxy.cognitiveclass.ai";
+    let textinput = document.getElementById("textinput").value;
+    
     if(this.state.mode === "url") {
-      url = url+"/url/sentiment?url="+document.getElementById("textinput").value;
+      url = url+"/url/sentiment?url="+ textinput;
     } else {
-      url = url+"/text/sentiment?text="+document.getElementById("textinput").value;
+      url = url+"/text/sentiment?text="+ textinput;
     }
     ret = axios.get(url);
     ret.then((response)=>{
-
+        let output = response.data;
+        if (output.sentiment) {
+            this.setState({sentimentOutput: output.sentiment});
+        } else {
+            throw new Error('response error')
+        }
       //Include code here to check the sentiment and fomrat the data accordingly
 
-      this.setState({sentimentOutput:response.data});
-      let output = response.data;
-      if(response.data === "positive") {
-        output = <div style={{color:"green",fontSize:20}}>{response.data}</div>
-      } else if (response.data === "negative"){
-        output = <div style={{color:"red",fontSize:20}}>{response.data}</div>
+      if(output.sentiment === "positive") {
+        output = <div style={{color:"green",fontSize:20, margin: '1em'}}>{output.sentiment}</div>
+      } else if (output.sentiment === "negative"){
+        output = <div style={{color:"red",fontSize:20, margin: '1em'}}>{output.sentiment}</div>
       } else {
-        output = <div style={{color:"orange",fontSize:20}}>{response.data}</div>
+        output = <div style={{color:"yellow",fontSize:20, margin: '1em'}}>{output.sentiment}</div>
       }
-      this.setState({sentimentOutput:output});
+      this.setState({sentimentOutput: output});
+    }).catch(err => {
+        console.log(err, err.statusText)
+        if (err.statusText === "Bad Request") {
+            document.write(`Something is wrong( Check URL, which you\`ve sent \n ${textinput}`)
+        } else {
+            document.write('Something is wrong( Try later')
+        }
     });
   }
 
   sendForEmotionAnalysis = () => {
     this.setState({sentiment:false});
     let ret = "";
-    let url = ".";
+    let url = "https://eakalagova-8081.theiadocker-24.proxy.cognitiveclass.ai";
     if(this.state.mode === "url") {
       url = url+"/url/emotion?url="+document.getElementById("textinput").value;
     } else {
@@ -73,8 +84,11 @@ class App extends React.Component {
     ret = axios.get(url);
 
     ret.then((response)=>{
-      this.setState({sentimentOutput:<EmotionTable emotions={response.data}/>});
-  });
+        this.setState({sentimentOutput:<EmotionTable emotions={response.data}/>});
+    })
+    .catch(() => {
+        document.write('Something is wrong( Try later')
+    });
   }
   
 
